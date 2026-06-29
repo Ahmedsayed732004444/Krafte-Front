@@ -493,11 +493,11 @@ export default function BookingsPage() {
               </div>
 
               {/* Column 3: Suit Specs */}
-              <div className="flex flex-col items-center justify-center min-w-[110px] lg:border-l lg:border-border/40 lg:pl-4">
-                <span className="bg-black text-white px-3.5 py-1 rounded-full text-xs font-black tracking-wide font-mono shadow-sm">
-                  A-{b.hangerNumber}
+              <div className="flex flex-col items-center justify-center min-w-[120px] lg:border-l lg:border-border/40 lg:pl-4">
+                <span className="bg-zinc-950 dark:bg-zinc-900 border border-zinc-800 text-zinc-100 px-4 py-1.5 rounded-2xl text-sm font-black tracking-wider font-mono shadow-md">
+                  {b.partitionName}-{b.hangerNumber}
                 </span>
-                <span className="text-xs text-muted-foreground font-bold mt-1.5">
+                <span className="text-xs text-muted-foreground font-extrabold mt-2">
                   مقاس {b.suitSize}
                 </span>
               </div>

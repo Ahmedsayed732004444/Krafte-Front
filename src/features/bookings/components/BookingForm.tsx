@@ -29,6 +29,16 @@ export const VEST_COLORS = { ...TROUSER_COLORS, Green: "أخضر", Blue: "أزر
 
 export const SUIT_SIZES = [42, 44, 46, 48, 50, 52, 54, 56];
 
+const optionalNumber = z.preprocess(
+  (val) => (val === "" || val === null || val === undefined || (typeof val === "number" && isNaN(val))) ? undefined : Number(val),
+  z.number().optional()
+) as z.ZodType<number | undefined, any, any>;
+
+const nullableNumber = z.preprocess(
+  (val) => (val === "" || val === null || val === undefined || (typeof val === "number" && isNaN(val))) ? null : Number(val),
+  z.number().nullable().optional()
+) as z.ZodType<number | null | undefined, any, any>;
+
 export const bookingFormSchema = z.object({
   customerPhone: z.string().min(1, "رقم هاتف العميل مطلوب"),
   customerName: z.string().optional(),
@@ -38,18 +48,18 @@ export const bookingFormSchema = z.object({
   fromDate: z.string().min(1, "تاريخ الاستلام مطلوب"),
   toDate: z.string().min(1, "تاريخ الإرجاع مطلوب"),
   totalAmount: z.number({ message: "المبلغ الإجمالي مطلوب" }).min(0),
-  discountAmount: z.number().optional(),
+  discountAmount: optionalNumber,
   hasDiscount: z.boolean(),
-  discountPercentage: z.number().min(0).max(100).optional().nullable(),
+  discountPercentage: nullableNumber,
   depositPaid: z.boolean(),
-  depositAmount: z.number().optional(),
+  depositAmount: optionalNumber,
   idTaken: z.boolean(),
   gravataColor: z.string().optional().nullable(),
   shirtColor: z.string().optional().nullable(),
   shirtSize: z.string().optional().nullable(),
   trouserColor: z.string().optional().nullable(),
-  trouserWaistSize: z.number().optional().nullable(),
-  trouserLength: z.number().optional().nullable(),
+  trouserWaistSize: nullableNumber,
+  trouserLength: nullableNumber,
   vestColor: z.string().optional().nullable(),
   notes: z.string().optional(),
 });
