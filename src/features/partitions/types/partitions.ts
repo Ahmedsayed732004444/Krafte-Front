@@ -1,11 +1,9 @@
 import type { PaginatedResponse } from "@/shared/types/pagination";
-import type { AccessorySize } from "@/features/bookings/types/bookings";
 
 // ─── Hanger inside Partition ───────────────────────────────────────
 export interface HangerSummary {
   id: string;
   number: number;
-  suitSize: AccessorySize;
 }
 
 // ─── Partition ─────────────────────────────────────────────────────

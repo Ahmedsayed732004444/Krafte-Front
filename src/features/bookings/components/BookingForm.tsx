@@ -206,13 +206,6 @@ export const BookingForm = ({
   const availableHangers = selectedPartition?.hangers ?? [];
   const selectedHanger = availableHangers.find(h => h.id === selectedHangerId);
 
-  // Auto-fill suitSize when hanger is selected
-  useEffect(() => {
-    if (selectedHanger?.suitSize != null) {
-      setValue("suitSize", selectedHanger.suitSize, { shouldValidate: true });
-    }
-  }, [selectedHanger, setValue]);
-
   // Live bill summary calculations
   const watchTotalAmount = watch("totalAmount") || 0;
   const watchDiscountAmount = watch("discountAmount") || 0;
@@ -429,7 +422,7 @@ export const BookingForm = ({
               <label className="block text-xs font-semibold text-muted-foreground mb-1.5">رقم الشماعة *</label>
               <select {...register("hangerId")} disabled={!selectedPartitionId} className="w-full h-12 px-4 rounded-xl bg-background border border-border/85 text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm font-semibold transition-all text-right disabled:opacity-50">
                 <option value="">اختر الشماعة</option>
-                {availableHangers.map(h => <option key={h.id} value={h.id}>{selectedPartition?.name}-{h.number} (مقاس {h.suitSize})</option>)}
+                {availableHangers.map(h => <option key={h.id} value={h.id}>{selectedPartition?.name}-{h.number}</option>)}
               </select>
               {errors.hangerId && <p className="text-red-400 text-xs mt-1">{errors.hangerId.message}</p>}
             </div>
@@ -448,7 +441,7 @@ export const BookingForm = ({
                     <option value="" disabled>اختر المقاس...</option>
                     {ACCESSORY_SIZES.map(sz => (
                       <option key={sz} value={sz}>
-                        مقاس {sz} {selectedHanger?.suitSize === sz ? "(المقاس الافتراضي للشماعة)" : ""}
+                        مقاس {sz}
                       </option>
                     ))}
                   </select>
