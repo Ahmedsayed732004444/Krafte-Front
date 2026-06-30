@@ -11,7 +11,6 @@ import type { HangerResponse } from "../types/hangers";
 const schema = z.object({
   number: z.number({ message: "الرقم مطلوب" }).int().min(1, "الرقم يجب أن يكون أكبر من 0"),
   partitionId: z.string().min(1, "القسم مطلوب"),
-  suitSize: z.number({ message: "المقاس مطلوب" }).int().min(42).max(64),
 });
 type FormData = z.infer<typeof schema>;
 
@@ -38,7 +37,7 @@ interface FormProps {
   submitLabel: string;
 }
 
-const SIZES = [42, 44, 46, 48, 50, 52, 54, 56, 58, 60, 62, 64];
+
 
 const HangerForm = ({ defaults, onSubmit, loading, submitLabel }: FormProps) => {
   const { data: partitionsData } = useGetPartitions({ pageSize: 50 });
@@ -48,7 +47,6 @@ const HangerForm = ({ defaults, onSubmit, loading, submitLabel }: FormProps) => 
     defaultValues: {
       number: defaults?.number,
       partitionId: defaults?.partitionId ?? "",
-      suitSize: defaults?.suitSize ?? 42,
     },
   });
 
@@ -66,13 +64,6 @@ const HangerForm = ({ defaults, onSubmit, loading, submitLabel }: FormProps) => 
           {partitions.map(p => <option key={p.id} value={p.id}>قسم {p.name}</option>)}
         </select>
         {errors.partitionId && <p className="text-destructive text-xs mt-1">{errors.partitionId.message}</p>}
-      </div>
-      <div>
-        <label className="block text-sm font-medium text-muted-foreground mb-2">مقاس البدلة</label>
-        <select {...register("suitSize", { valueAsNumber: true })} className={cn("w-full h-11 px-4 rounded-xl bg-[#1a1f2e] border text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all bg-background", errors.suitSize ? "border-destructive" : "border-border")}>
-          {SIZES.map(s => <option key={s} value={s}>{s}</option>)}
-        </select>
-        {errors.suitSize && <p className="text-destructive text-xs mt-1">{errors.suitSize.message}</p>}
       </div>
       <button type="submit" disabled={loading} className="w-full h-11 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-60">
         {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
@@ -160,7 +151,6 @@ export default function HangersPage() {
                 <tr className="border-b border-border bg-muted/40">
                   <th className="text-right text-xs font-bold text-muted-foreground uppercase px-6 py-4">رقم الشماعة</th>
                   <th className="text-right text-xs font-bold text-muted-foreground uppercase px-6 py-4">القسم</th>
-                  <th className="text-right text-xs font-bold text-muted-foreground uppercase px-6 py-4">مقاس البدلة</th>
                   <th className="text-right text-xs font-bold text-muted-foreground uppercase px-6 py-4">إجراءات</th>
                 </tr>
               </thead>
@@ -175,9 +165,6 @@ export default function HangersPage() {
                     </td>
                     <td className="px-6 py-4">
                       <span className="px-3 py-1 rounded-full bg-accent/30 border border-border text-muted-foreground text-sm font-semibold">قسم {hanger.partition.name}</span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="px-3 py-1 rounded-full bg-primary/15 border border-primary/25 text-primary text-sm font-semibold">{hanger.suitSize}</span>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
@@ -206,7 +193,7 @@ export default function HangersPage() {
 
       {/* Modals */}
       {showCreate && <Modal title="إضافة شماعة جديدة" onClose={() => setShowCreate(false)}><HangerForm submitLabel="إنشاء الشماعة" loading={createMutation.isPending} onSubmit={async d => { await createMutation.mutateAsync(d as any); setShowCreate(false); }} /></Modal>}
-      {editTarget && <Modal title="تعديل الشماعة" onClose={() => setEditTarget(null)}><HangerForm defaults={{ number: editTarget.number, partitionId: editTarget.partition.id, suitSize: editTarget.suitSize }} submitLabel="حفظ التعديلات" loading={updateMutation.isPending} onSubmit={async d => { await updateMutation.mutateAsync({ id: editTarget.id, body: d as any }); setEditTarget(null); }} /></Modal>}
+      {editTarget && <Modal title="تعديل الشماعة" onClose={() => setEditTarget(null)}><HangerForm defaults={{ number: editTarget.number, partitionId: editTarget.partition.id }} submitLabel="حفظ التعديلات" loading={updateMutation.isPending} onSubmit={async d => { await updateMutation.mutateAsync({ id: editTarget.id, body: d as any }); setEditTarget(null); }} /></Modal>}
       {deleteTarget && <ConfirmDelete hanger={deleteTarget} loading={deleteMutation.isPending} onConfirm={async () => { await deleteMutation.mutateAsync(deleteTarget.id); setDeleteTarget(null); }} onCancel={() => setDeleteTarget(null)} />}
     </div>
   );

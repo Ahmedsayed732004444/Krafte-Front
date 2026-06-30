@@ -201,10 +201,8 @@ export const BookingForm = ({
   });
 
   const selectedPartitionId = watch("partitionId");
-  const selectedHangerId = watch("hangerId");
   const selectedPartition = partitions.find(p => p.id === selectedPartitionId);
   const availableHangers = selectedPartition?.hangers ?? [];
-  const selectedHanger = availableHangers.find(h => h.id === selectedHangerId);
 
   // Live bill summary calculations
   const watchTotalAmount = watch("totalAmount") || 0;
