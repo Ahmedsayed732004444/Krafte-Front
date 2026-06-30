@@ -47,25 +47,32 @@ const getArabicDateParts = (dateString: string) => {
 export default function BookingsPage() {
   const navigate = useNavigate();
 
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("");
+  // ── Helpers to read / write filter state from sessionStorage ──────
+  const ss = (key: string, fallback: string) =>
+    sessionStorage.getItem(`bk_${key}`) ?? fallback;
+
+  const [page, setPage] = useState(() => Number(ss("page", "1")));
+  const [pageSize, setPageSize] = useState(() => Number(ss("pageSize", "10")));
+  const [search, setSearch] = useState(() => ss("search", ""));
+  const [debouncedSearch, setDebouncedSearch] = useState(() => ss("search", ""));
+  const [statusFilter, setStatusFilter] = useState<string>(() => ss("status", ""));
   const [showPickup, setShowPickup] = useState(false);
 
   // Advanced Filters State
-  const [showAdvanced, setShowAdvanced] = useState(false);
-  const [partitionFilter, setPartitionFilter] = useState("");
-  const [hangerFilter, setHangerFilter] = useState("");
-  const [fromDateFilter, setFromDateFilter] = useState("");
-  const [toDateFilter, setToDateFilter] = useState("");
-  const [isExpiredFilter, setIsExpiredFilter] = useState<string>("");
-  const [hasDiscountFilter, setHasDiscountFilter] = useState<string>("");
-  const [depositPaidFilter, setDepositPaidFilter] = useState<string>("");
-  const [idTakenFilter, setIdTakenFilter] = useState<string>("");
-  const [sortColumn, setSortColumn] = useState("CreatedAt");
-  const [sortDirection, setSortDirection] = useState<"Asc" | "Desc">("Desc");
+  const [showAdvanced, setShowAdvanced] = useState(() => ss("showAdvanced", "false") === "true");
+  const [partitionFilter, setPartitionFilter] = useState(() => ss("partition", ""));
+  const [hangerFilter, setHangerFilter] = useState(() => ss("hanger", ""));
+  const [fromDateFilter, setFromDateFilter] = useState(() => ss("fromDate", ""));
+  const [toDateFilter, setToDateFilter] = useState(() => ss("toDate", ""));
+  const [isExpiredFilter, setIsExpiredFilter] = useState<string>(() => ss("isExpired", ""));
+  const [hasDiscountFilter, setHasDiscountFilter] = useState<string>(() => ss("hasDiscount", ""));
+  const [depositPaidFilter, setDepositPaidFilter] = useState<string>(() => ss("depositPaid", ""));
+  const [idTakenFilter, setIdTakenFilter] = useState<string>(() => ss("idTaken", ""));
+  const [isDamagedFilter, setIsDamagedFilter] = useState<string>(() => ss("isDamaged", ""));
+  const [sortColumn, setSortColumn] = useState(() => ss("sortCol", "CreatedAt"));
+  const [sortDirection, setSortDirection] = useState<"Asc" | "Desc">(
+    () => (ss("sortDir", "Desc") as "Asc" | "Desc")
+  );
 
   // Partitions for select filter
   const { data: partitionsData } = useGetPartitions({ pageSize: 50 });
@@ -84,6 +91,31 @@ export default function BookingsPage() {
     return () => clearTimeout(t);
   }, [search]);
 
+  // Persist all filter state to sessionStorage whenever any value changes
+  React.useEffect(() => {
+    sessionStorage.setItem("bk_page", String(page));
+    sessionStorage.setItem("bk_pageSize", String(pageSize));
+    sessionStorage.setItem("bk_search", search);
+    sessionStorage.setItem("bk_status", statusFilter);
+    sessionStorage.setItem("bk_showAdvanced", String(showAdvanced));
+    sessionStorage.setItem("bk_partition", partitionFilter);
+    sessionStorage.setItem("bk_hanger", hangerFilter);
+    sessionStorage.setItem("bk_fromDate", fromDateFilter);
+    sessionStorage.setItem("bk_toDate", toDateFilter);
+    sessionStorage.setItem("bk_isExpired", isExpiredFilter);
+    sessionStorage.setItem("bk_hasDiscount", hasDiscountFilter);
+    sessionStorage.setItem("bk_depositPaid", depositPaidFilter);
+    sessionStorage.setItem("bk_idTaken", idTakenFilter);
+    sessionStorage.setItem("bk_isDamaged", isDamagedFilter);
+    sessionStorage.setItem("bk_sortCol", sortColumn);
+    sessionStorage.setItem("bk_sortDir", sortDirection);
+  }, [
+    page, pageSize, search, statusFilter, showAdvanced,
+    partitionFilter, hangerFilter, fromDateFilter, toDateFilter,
+    isExpiredFilter, hasDiscountFilter, depositPaidFilter,
+    idTakenFilter, isDamagedFilter, sortColumn, sortDirection
+  ]);
+
   const { data, isLoading, refetch } = useGetBookings({
     pageNumber: page,
     pageSize: pageSize,
@@ -97,6 +129,7 @@ export default function BookingsPage() {
     hasDiscount: hasDiscountFilter === "true" ? true : hasDiscountFilter === "false" ? false : undefined,
     depositPaid: depositPaidFilter === "true" ? true : depositPaidFilter === "false" ? false : undefined,
     idTaken: idTakenFilter === "true" ? true : idTakenFilter === "false" ? false : undefined,
+    isDamaged: isDamagedFilter === "true" ? true : isDamagedFilter === "false" ? false : undefined,
     sortColumn: sortColumn || undefined,
     sortDirection: sortDirection || undefined,
   });
@@ -285,6 +318,7 @@ export default function BookingsPage() {
               setHasDiscountFilter("");
               setDepositPaidFilter("");
               setIdTakenFilter("");
+              setIsDamagedFilter("");
               setSortColumn("CreatedAt");
               setSortDirection("Desc");
               setSearch("");
@@ -384,6 +418,19 @@ export default function BookingsPage() {
               <option value="">الكل</option>
               <option value="true">تم أخذ البطاقة</option>
               <option value="false">لم تؤخذ بعد</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-bold text-muted-foreground mb-1.5 mr-1">حالة البدلة (تالفة؟)</label>
+            <select
+              value={isDamagedFilter}
+              onChange={e => { setIsDamagedFilter(e.target.value); setPage(1); }}
+              className="w-full h-11 px-4 rounded-xl bg-background border border-border text-foreground outline-none focus:ring-1 focus:ring-primary text-xs font-semibold text-right cursor-pointer"
+            >
+              <option value="">الكل</option>
+              <option value="true">تالفة فقط</option>
+              <option value="false">سليمة فقط</option>
             </select>
           </div>
 

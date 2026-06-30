@@ -11,6 +11,7 @@ import NotificationsPage from "@/features/notifications/pages/NotificationsPage"
 import CustomersPage from "@/features/customers/pages/CustomersPage";
 import CustomerDetailsPage from "@/features/customers/pages/CustomerDetailsPage";
 import AnalyticsPage from "@/features/analytics/pages/AnalyticsPage";
+import ExpensesPage from "@/features/expenses/pages/ExpensesPage";
 
 export default function AppRouter() {
   return (
@@ -28,6 +29,7 @@ export default function AppRouter() {
             <Route path="/customers/:id" element={<CustomerDetailsPage />} />
             <Route path="/notifications" element={<NotificationsPage />} />
             <Route path="/analytics" element={<AnalyticsPage />} />
+            <Route path="/expenses" element={<ExpensesPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>

@@ -14,6 +14,7 @@ import {
   useGetPeakTimes,
   useGetCustomerRetention,
   useGetRiskReport,
+  useGetMostRequestedSuits,
 } from "../hooks/useAnalytics";
 import { useGetPartitions } from "@/features/partitions/hooks/usePartitions";
 import {
@@ -28,6 +29,8 @@ import {
   Sliders,
   Info,
   FileSpreadsheet,
+  TrendingDown,
+  TrendingUp,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { analyticsService } from "../services/analyticsService";
@@ -88,6 +91,8 @@ export default function AnalyticsPage() {
         1: "الإيراد-الشهري",
         2: "المدفوعات-المعلقة",
         3: "المخزون-والمقاسات",
+        4: "سجل-المصروفات",
+        5: "الحسابات-التفصيلي-الموحد",
       };
       const name = names[reportType as keyof typeof names] || "تقرير";
       const suffix = from || to ? `_${from ?? ""}_${to ?? ""}` : `_${new Date().toISOString().split("T")[0]}`;
@@ -142,6 +147,7 @@ export default function AnalyticsPage() {
 
   const { data: suitSizesRanking, isLoading: suitSizesRankLoading } = useGetSuitSizes(suitSizesFrom, suitSizesTo);
   const { data: suitSizesAvailability, isLoading: suitSizesAvailLoading } = useGetSuitSizesAvailability();
+  const { data: mostRequestedSuits, isLoading: mostRequestedSuitsLoading } = useGetMostRequestedSuits(suitSizesFrom, suitSizesTo);
   const { data: partitionsList } = useGetPartitions({ pageSize: 50 });
   const { data: hangersUtilization, isLoading: hangersUtilLoading } = useGetHangersUtilization(
     selectedPartitionId === "all" ? undefined : selectedPartitionId
@@ -819,6 +825,14 @@ export default function AnalyticsPage() {
                 {exporting[2] ? <Activity className="w-4 h-4 animate-spin" /> : <FileSpreadsheet className="w-4 h-4" />}
                 <span>تصدير الديون (Excel)</span>
               </button>
+              <button
+                disabled={exporting[5]}
+                onClick={() => handleExport(5, revenueFrom, revenueTo)}
+                className="flex items-center gap-2 px-4 h-10 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+              >
+                {exporting[5] ? <Activity className="w-4 h-4 animate-spin" /> : <FileSpreadsheet className="w-4 h-4" />}
+                <span>تصدير الحسابات الموحد (Excel)</span>
+              </button>
             </div>
           </div>
 
@@ -826,168 +840,284 @@ export default function AnalyticsPage() {
             <div className="flex justify-center py-12"><Activity className="w-8 h-8 text-primary animate-spin" /></div>
           ) : revenueBreakdown ? (
             <div className="space-y-6">
-              {/* Financial Dashboard summary */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Collected */}
-                <div className="bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 border border-emerald-500/25 rounded-3xl p-6 relative overflow-hidden">
-                  <div className="absolute top-0 left-0 w-20 h-20 bg-emerald-500/5 rounded-full -ml-4 -mt-4" />
-                  <span className="text-xs text-emerald-400 font-bold block mb-1">المقبوضات الفعلية (الخزينة)</span>
-                  <h3 className="text-3xl font-black text-emerald-400 font-mono">{revenueBreakdown.actualCollected} ج.م</h3>
-                  <span className="text-[10px] text-muted-foreground block mt-2">من أصل صافي إيراد {revenueBreakdown.netRevenue} ج.م</span>
-                </div>
 
-                {/* Outstanding */}
-                <div className="bg-gradient-to-br from-amber-500/10 to-amber-500/5 border border-amber-500/25 rounded-3xl p-6 relative overflow-hidden">
-                  <span className="text-xs text-amber-400 font-bold block mb-1">المستحقات المعلقة لدى العملاء</span>
-                  <h3 className="text-3xl font-black text-amber-400 font-mono">{revenueBreakdown.outstandingBalance} ج.م</h3>
-                  <span className="text-[10px] text-muted-foreground block mt-2">مبالغ متبقية على حجوزات لم تكتمل بعد</span>
-                </div>
-
-                {/* Discounts */}
-                <div className="bg-card border border-border rounded-3xl p-6 text-right">
-                  <span className="text-xs text-muted-foreground font-bold block mb-1">قيمة الخصومات الممنوحة</span>
-                  <h3 className="text-2xl font-black text-foreground font-mono">{revenueBreakdown.totalDiscounts} ج.م</h3>
-                  <span className="text-[10px] text-muted-foreground block mt-2">
-                    على {revenueBreakdown.bookingsWithDiscount} حجز مخصّم (متوسط القيمة: {revenueBreakdown.averageBookingValue.toFixed(1)} ج.م)
-                  </span>
-                </div>
+              {/* ══ Accounting basis notice ══ */}
+              <div className="bg-blue-500/5 border border-blue-500/20 rounded-2xl px-5 py-3.5 flex items-start gap-3" dir="rtl">
+                <Info className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  <span className="font-black text-blue-400">ملاحظة محاسبية مهمة: </span>
+                  هذه الصفحة تعرض نظامَين محاسبيَّين مختلفَين في نفس الوقت.
+                  <span className="text-foreground font-bold"> الإيراد المتوقع والمستحقات</span> مبنيَّان على تاريخ إنشاء الحجز،
+                  بينما <span className="text-foreground font-bold">دخل الخزينة الفعلي</span> مبني على تاريخ حركة الأموال (استلام / إرجاع / إلغاء).
+                  لذلك الأرقام <span className="font-black text-blue-400">لا تُجمع مع بعض</span> وهذا طبيعي وصحيح تماماً.
+                </p>
               </div>
 
-              {/* Financial Details breakdown table */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="bg-card border border-border rounded-3xl p-6 space-y-4">
-                  <h3 className="text-base font-black text-foreground border-b border-border/40 pb-2">التصنيف التفصيلي للمبالغ</h3>
-                  <div className="space-y-3.5 text-xs font-semibold">
-                    <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground">إجمالي الإيراد الأصلي (Gross)</span>
-                      <span className="font-extrabold text-foreground font-mono">{revenueBreakdown.grossRevenue} ج.م</span>
-                    </div>
-                    <div className="flex justify-between items-center text-amber-400/90">
-                      <span>إجمالي قيمة التخفيضات (Discounts)</span>
-                      <span className="font-extrabold font-mono">-{revenueBreakdown.totalDiscounts} ج.م</span>
-                    </div>
-                    <div className="flex justify-between items-center border-t border-border/30 pt-3">
-                      <span className="text-foreground">صافي إيراد المحل المتوقع (Net)</span>
-                      <span className="font-black text-foreground font-mono">{revenueBreakdown.netRevenue} ج.م</span>
-                    </div>
-                    <div className="flex justify-between items-center text-emerald-400">
-                      <span>إجمالي تعويضات التلف المحصلة (Damage Claims)</span>
-                      <span className="font-extrabold font-mono">+{revenueBreakdown.totalDamageFees} ج.م</span>
-                    </div>
-                    <div className="flex justify-between items-center text-red-400/90">
-                      <span>إجمالي الخصومات المستقطعة من التأمين (إلغاء)</span>
-                      <span className="font-extrabold font-mono">+{revenueBreakdown.totalDeductions} ج.م</span>
-                    </div>
-                  </div>
-                </div>
+              {/* ══ TWO SEPARATE PANELS ══ */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
-                <div className="bg-card border border-border rounded-3xl p-6 flex flex-col justify-center items-center text-center space-y-3">
-                  <div className="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-400 shadow-inner">
-                    <DollarSign className="w-6 h-6" />
+                {/* ─── Panel A: Accrual (booking-date based) ─── */}
+                <div className="bg-card border border-border rounded-3xl overflow-hidden" dir="rtl">
+                  {/* Panel header */}
+                  <div className="flex items-center justify-between px-5 py-3 bg-primary/5 border-b border-border/60">
+                    <div className="flex items-center gap-2">
+                      <FileSpreadsheet className="w-4 h-4 text-primary" />
+                      <span className="text-xs font-black text-foreground">الإيراد المتوقع (Accrual)</span>
+                    </div>
+                    <span className="text-[10px] font-black px-2.5 py-1 rounded-full bg-primary/10 text-primary border border-primary/20">
+                      أساس: تاريخ إنشاء الحجز
+                    </span>
                   </div>
-                  <h4 className="text-sm font-bold text-foreground">معدل التحصيل المالي</h4>
-                  <div className="w-full max-w-[280px] space-y-2">
-                    <div className="flex justify-between text-[10px] font-black text-muted-foreground">
-                      <span>نسبة التحصيل الفعلي:</span>
-                      <span className="text-emerald-400">
-                        {((revenueBreakdown.actualCollected / (revenueBreakdown.netRevenue || 1)) * 100).toFixed(1)}%
+
+                  <div className="p-5 space-y-0">
+                    {/* Gross */}
+                    <div className="flex justify-between items-start py-3 border-b border-border/30">
+                      <div>
+                        <p className="text-xs font-black text-foreground">الإيراد الإجمالي (Gross)</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">مجموع قيمة كل الحجوزات المسجّلة في الفترة بدون خصومات</p>
+                      </div>
+                      <span className="font-black text-foreground font-mono text-sm shrink-0 mr-4">
+                        {revenueBreakdown.grossRevenue.toLocaleString("ar-EG-u-nu-latn", { minimumFractionDigits: 3 })} د.ك
                       </span>
                     </div>
-                    <ProgressBar 
-                      value={revenueBreakdown.actualCollected} 
-                      max={revenueBreakdown.netRevenue} 
-                      className="bg-emerald-500" 
-                    />
+
+                    {/* Discounts */}
+                    <div className="flex justify-between items-start py-3 border-b border-border/30">
+                      <div>
+                        <p className="text-xs font-black text-amber-400">— الخصومات الممنوحة</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">
+                          على {revenueBreakdown.bookingsWithDiscount} حجز
+                          {revenueBreakdown.totalBookings > 0 && ` (${((revenueBreakdown.bookingsWithDiscount / revenueBreakdown.totalBookings) * 100).toFixed(0)}% من الإجمالي)`}
+                        </p>
+                      </div>
+                      <span className="font-black text-amber-400 font-mono text-sm shrink-0 mr-4">
+                        -{revenueBreakdown.totalDiscounts.toLocaleString("ar-EG-u-nu-latn", { minimumFractionDigits: 3 })} د.ك
+                      </span>
+                    </div>
+
+                    {/* Net */}
+                    <div className="flex justify-between items-start py-3 border-b border-border/30 bg-primary/4 rounded-lg px-2 my-1">
+                      <div>
+                        <p className="text-xs font-black text-primary">= صافي الإيراد المتوقع (Net)</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">ما يستحقه المحل نظرياً على كل الحجوزات المسجّلة</p>
+                      </div>
+                      <span className="font-black text-primary font-mono text-base shrink-0 mr-4">
+                        {revenueBreakdown.netRevenue.toLocaleString("ar-EG-u-nu-latn", { minimumFractionDigits: 3 })} د.ك
+                      </span>
+                    </div>
+
+                    {/* Outstanding */}
+                    <div className="flex justify-between items-start py-3 mt-1">
+                      <div>
+                        <p className="text-xs font-black text-amber-400">⏳ منه: لا يزال في ذمة العملاء</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">
+                          فقط الحجوزات النشطة والخارجة — سيُحصَّل عند الإرجاع
+                        </p>
+                        <p className="text-[10px] text-blue-400/80 mt-1 font-semibold">
+                          ⚠ هذا الرقم لا يُقارَن بـ"دخل الخزينة" (نظامان مختلفان)
+                        </p>
+                      </div>
+                      <span className="font-black text-amber-400 font-mono text-base shrink-0 mr-4">
+                        {revenueBreakdown.outstandingBalance.toLocaleString("ar-EG-u-nu-latn", { minimumFractionDigits: 3 })} د.ك
+                      </span>
+                    </div>
                   </div>
-                  <p className="text-xs text-muted-foreground leading-relaxed max-w-[280px] mt-2">
-                    يعرض المؤشر نسبة المقبوضات الفعلية المسلمة بالدرج من أصل صافي الإيرادات المسجلة بالخزينة.
-                  </p>
+
+                  {/* Panel footer: avg */}
+                  <div className="px-5 py-3 border-t border-border/40 bg-muted/10 flex items-center justify-between">
+                    <span className="text-[10px] text-muted-foreground font-semibold">متوسط قيمة الحجز</span>
+                    <span className="text-xs font-black text-foreground font-mono">
+                      {revenueBreakdown.averageBookingValue.toLocaleString("ar-EG-u-nu-latn", { minimumFractionDigits: 3 })} د.ك
+                      <span className="text-muted-foreground font-normal mr-1">/ {revenueBreakdown.totalBookings} حجز</span>
+                    </span>
+                  </div>
+                </div>
+
+                {/* ─── Panel B: Cash Flow (event-date based) ─── */}
+                <div className="bg-card border border-emerald-500/25 rounded-3xl overflow-hidden" dir="rtl">
+                  {/* Panel header */}
+                  <div className="flex items-center justify-between px-5 py-3 bg-emerald-500/5 border-b border-emerald-500/20">
+                    <div className="flex items-center gap-2">
+                      <DollarSign className="w-4 h-4 text-emerald-400" />
+                      <span className="text-xs font-black text-foreground">التدفق النقدي الفعلي (Cash Flow)</span>
+                    </div>
+                    <span className="text-[10px] font-black px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                      أساس: تاريخ حركة الأموال
+                    </span>
+                  </div>
+
+                  <div className="p-5 space-y-0">
+                    {/* Deposits */}
+                    <div className="flex justify-between items-start py-3 border-b border-border/30">
+                      <div>
+                        <p className="text-xs font-black text-foreground">+ تأمينات استُلمت في الفترة</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">مبالغ تأمين دُفعت وقت إنشاء الحجز (CreatedAt)</p>
+                      </div>
+                      <span className="text-[10px] text-muted-foreground font-mono shrink-0 mr-4 mt-1">تشمل ↑</span>
+                    </div>
+
+                    {/* Rental payments */}
+                    <div className="flex justify-between items-start py-3 border-b border-border/30">
+                      <div>
+                        <p className="text-xs font-black text-foreground">+ مدفوعات عند الاستلام</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">مبالغ دُفعت وقت استلام البدلة (PickedUpAt)</p>
+                      </div>
+                      <span className="text-[10px] text-muted-foreground font-mono shrink-0 mr-4 mt-1">تشمل ↑</span>
+                    </div>
+
+                    {revenueBreakdown.totalDamageFees > 0 && (
+                      <div className="flex justify-between items-start py-3 border-b border-border/30">
+                        <div>
+                          <p className="text-xs font-black text-foreground">+ تعويضات التلف المحصّلة</p>
+                          <p className="text-[10px] text-muted-foreground mt-0.5">من التأمين + مدفوعات إضافية (ReturnedAt)</p>
+                        </div>
+                        <span className="font-bold text-emerald-400 font-mono text-sm shrink-0 mr-4">
+                          +{revenueBreakdown.totalDamageFees.toLocaleString("ar-EG-u-nu-latn", { minimumFractionDigits: 3 })} د.ك
+                        </span>
+                      </div>
+                    )}
+
+                    {revenueBreakdown.totalDeductions > 0 && (
+                      <div className="flex justify-between items-start py-3 border-b border-border/30">
+                        <div>
+                          <p className="text-xs font-black text-foreground">+ غرامات إلغاء مُستقطعة</p>
+                          <p className="text-[10px] text-muted-foreground mt-0.5">اقتُطعت من التأمين عند الإلغاء (CancelledAt)</p>
+                        </div>
+                        <span className="font-bold text-orange-400 font-mono text-sm shrink-0 mr-4">
+                          +{revenueBreakdown.totalDeductions.toLocaleString("ar-EG-u-nu-latn", { minimumFractionDigits: 3 })} د.ك
+                        </span>
+                      </div>
+                    )}
+
+                    <div className="flex justify-between items-start py-3 border-b border-border/30">
+                      <div>
+                        <p className="text-xs font-black text-red-400">— مردودات للعملاء</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">تأمين رُدَّ عند الإرجاع أو الإلغاء بدون خصم</p>
+                      </div>
+                      <span className="text-[10px] text-muted-foreground font-mono shrink-0 mr-4 mt-1">مطروح ↑</span>
+                    </div>
+
+                    {/* Net Collected = result */}
+                    <div className="flex justify-between items-start py-3 bg-emerald-500/8 rounded-xl px-3 mt-2">
+                      <div>
+                        <p className="text-xs font-black text-emerald-400">✅ صافي دخل الخزينة الفعلي</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">
+                          المبلغ الحقيقي الذي وصل يدك في هذه الفترة
+                        </p>
+                        <p className="text-[10px] text-blue-400/80 mt-1 font-semibold">
+                          ⚠ لا يُقارَن بـ"الإيراد المتوقع" (نظامان مختلفان)
+                        </p>
+                      </div>
+                      <span className="font-black text-emerald-400 font-mono text-xl shrink-0 mr-4">
+                        {revenueBreakdown.actualCollected.toLocaleString("ar-EG-u-nu-latn", { minimumFractionDigits: 3 })}
+                        <span className="text-sm mr-1">د.ك</span>
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Panel footer: collection rate vs GROSS (not net, to avoid confusion) */}
+                  <div className="px-5 py-4 border-t border-emerald-500/20 bg-emerald-500/5 space-y-2">
+                    <div className="flex justify-between text-[10px] font-black">
+                      <span className="text-muted-foreground">نسبة ما تُحصِّله من إجمالي الحجوزات:</span>
+                      <span className="text-emerald-400">
+                        {((revenueBreakdown.actualCollected / (revenueBreakdown.grossRevenue || 1)) * 100).toFixed(1)}%
+                      </span>
+                    </div>
+                    <ProgressBar
+                      value={revenueBreakdown.actualCollected}
+                      max={revenueBreakdown.grossRevenue}
+                      className="bg-emerald-500"
+                    />
+                    <p className="text-[10px] text-muted-foreground">
+                      النسبة ستزيد تدريجياً مع اكتمال الحجوزات النشطة وتسديد المبالغ المتبقية.
+                    </p>
+                  </div>
                 </div>
               </div>
+
+              {/* ══ Pending Payments List ══ */}
+              <div className="bg-card border border-border rounded-3xl p-6" dir="rtl">
+                <div className="flex items-center justify-between border-b border-border/80 pb-4 mb-4">
+                  <div>
+                    <h3 className="text-base font-black text-foreground">الحجوزات التي تحتوي على ديون / مستحقات معلقة</h3>
+                    <p className="text-xs text-muted-foreground font-semibold mt-0.5">مرتبة من الأكبر رصيداً متبقياً إلى الأقل</p>
+                  </div>
+                  {pendingPayments && (
+                    <span className="bg-amber-500/10 text-amber-400 text-xs font-black px-3 py-1 rounded-xl">
+                      {pendingPayments.totalCount} حجز معلّق
+                    </span>
+                  )}
+                </div>
+
+                {pendingLoading ? (
+                  <div className="flex justify-center py-6"><Activity className="w-6 h-6 text-primary animate-spin" /></div>
+                ) : pendingPayments && pendingPayments.items.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-right text-xs font-semibold">
+                      <thead>
+                        <tr className="border-b border-border/60 text-muted-foreground">
+                          <th className="py-2.5 px-3">كود الحجز</th>
+                          <th className="py-2.5 px-3">الزبون</th>
+                          <th className="py-2.5 px-3">الحالة</th>
+                          <th className="py-2.5 px-3">تاريخ الإرجاع المتوقع</th>
+                          <th className="py-2.5 px-3">أيام الاستحقاق</th>
+                          <th className="py-2.5 px-3 text-left">المبلغ المتبقي</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border/40">
+                        {pendingPayments.items.map((item) => {
+                          const isOverdue = item.daysUntilDue < 0;
+                          const isDueSoon = item.daysUntilDue >= 0 && item.daysUntilDue <= 3;
+                          return (
+                            <tr key={item.bookingId} className="hover:bg-accent/30 transition-colors">
+                              <td className="py-3 px-3 font-black text-primary">{item.bookingCode}</td>
+                              <td className="py-3 px-3">
+                                <div>
+                                  <p className="font-bold text-foreground">{item.customerName}</p>
+                                  <p className="text-[10px] text-muted-foreground">{item.customerPhone}</p>
+                                </div>
+                              </td>
+                              <td className="py-3 px-3">
+                                <span className={cn(
+                                  "text-[10px] font-black px-2 py-0.5 rounded-full",
+                                  item.status === "PickedUp"
+                                    ? "bg-blue-500/10 text-blue-400"
+                                    : "bg-emerald-500/10 text-emerald-400"
+                                )}>
+                                  {item.status === "PickedUp" ? "خارجة" : "محجوزة"}
+                                </span>
+                              </td>
+                              <td className="py-3 px-3 text-muted-foreground">
+                                {new Date(item.toDate).toLocaleDateString("ar-EG-u-nu-latn", { day: "2-digit", month: "short", year: "numeric" })}
+                              </td>
+                              <td className="py-3 px-3">
+                                <span className={cn(
+                                  "text-[10px] font-black px-2 py-0.5 rounded-full",
+                                  isOverdue ? "bg-red-500/10 text-red-400" : isDueSoon ? "bg-amber-500/10 text-amber-400" : "bg-muted/50 text-muted-foreground"
+                                )}>
+                                  {isOverdue ? `متأخر ${Math.abs(item.daysUntilDue)} يوم` : item.daysUntilDue === 0 ? "اليوم" : `${item.daysUntilDue} يوم`}
+                                </span>
+                              </td>
+                              <td className="py-3 px-3 text-left font-black text-red-400 font-mono">
+                                {item.remainingAmount.toLocaleString("ar-EG-u-nu-latn", { minimumFractionDigits: 3 })} د.ك
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="text-center py-6 text-muted-foreground">لا توجد أي حجوزات بديون معلقة حالياً ✓</div>
+                )}
+              </div>
             </div>
+
           ) : null}
 
-          {/* Pending payments list */}
-          <div className="bg-card border border-border rounded-3xl p-6">
-            <div className="flex items-center justify-between border-b border-border/80 pb-4 mb-4">
-              <div>
-                <h3 className="text-base font-black text-foreground">الحجوزات التي تحتوي على ديون/مستحقات معلقة</h3>
-                <p className="text-xs text-muted-foreground font-semibold mt-0.5">مرتبة من الأكبر رصيداً متبقياً إلى الأقل</p>
-              </div>
-              {pendingPayments && (
-                <span className="bg-amber-500/10 text-amber-400 text-xs font-black px-3 py-1 rounded-xl">
-                  {pendingPayments.totalCount} حجز معلّق
-                </span>
-              )}
-            </div>
-
-            {pendingLoading ? (
-              <div className="flex justify-center py-6"><Activity className="w-6 h-6 text-primary animate-spin" /></div>
-            ) : pendingPayments && pendingPayments.items.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="w-full text-right text-xs font-semibold">
-                  <thead>
-                    <tr className="border-b border-border/60 text-muted-foreground">
-                      <th className="py-2.5 px-3">كود الحجز</th>
-                      <th className="py-2.5 px-3">الزبون</th>
-                      <th className="py-2.5 px-3">الحالة</th>
-                      <th className="py-2.5 px-3">تاريخ الإرجاع المتوقع</th>
-                      <th className="py-2.5 px-3">أيام الاستحقاق</th>
-                      <th className="py-2.5 px-3 text-left">المبلغ المتبقي</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border/30">
-                    {pendingPayments.items.map((item, idx) => {
-                      const isOverdue = item.daysUntilDue < 0;
-                      return (
-                        <tr key={idx} className="hover:bg-accent/25 transition-colors">
-                          <td className="py-3 px-3 font-bold text-foreground">
-                            <span className="font-mono">{item.bookingCode}</span>
-                          </td>
-                          <td className="py-3 px-3">
-                            <div className="flex flex-col">
-                              <span className="text-foreground font-extrabold">{item.customerName}</span>
-                              <span className="text-[10px] text-muted-foreground font-mono">{item.customerPhone}</span>
-                            </div>
-                          </td>
-                          <td className="py-3 px-3">
-                            <span className={cn(
-                              "text-[10px] font-black px-2.5 py-0.5 rounded-full border",
-                              item.status === "Active" ? "bg-primary/10 border-primary/30 text-primary" : "bg-amber-500/10 border-amber-500/30 text-amber-400"
-                            )}>
-                              {item.status === "Active" ? "تحت التجهيز" : "خارج مع الزبون"}
-                            </span>
-                          </td>
-                          <td className="py-3 px-3 text-muted-foreground font-mono">
-                            {new Date(item.toDate).toLocaleDateString("ar-EG-u-nu-latn")}
-                          </td>
-                          <td className="py-3 px-3">
-                            {isOverdue ? (
-                              <span className="text-red-400 font-extrabold bg-red-500/10 px-2 py-0.5 rounded-lg flex items-center gap-1 w-fit">
-                                <AlertTriangle className="w-3.5 h-3.5" />
-                                <span>متأخر بـ {Math.abs(item.daysUntilDue)} يوم</span>
-                              </span>
-                            ) : (
-                              <span className="text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded-lg w-fit block">
-                                متبقي {item.daysUntilDue} يوم
-                              </span>
-                            )}
-                          </td>
-                          <td className="py-3 px-3 text-left font-black text-red-400 font-mono">
-                            {item.remainingAmount} ج.م
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <div className="text-center py-6 text-muted-foreground">لا توجد أي حجوزات بديون معلقة حالياً ✓</div>
-            )}
-          </div>
         </div>
       )}
+
 
       {/* ─── TAB 3: INV & COMPARTMENTS ─── */}
       {activeTab === "inventory" && (
@@ -1246,6 +1376,68 @@ export default function AnalyticsPage() {
                 <div className="text-center py-12 text-muted-foreground">لا توجد بيانات متاحة</div>
               )}
             </div>
+          </div>
+
+          {/* Most Requested Suits - البدلة الأكثر طلباً */}
+          <div className="bg-card border border-border rounded-3xl p-6 space-y-4">
+            <div className="border-b border-border/40 pb-3">
+              <h3 className="text-base font-black text-foreground">البدل الأكثر طلباً وتأجيراً بالمعرض</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">ترتيب البدلات (القسم + الشماعة + المقاس) الأكثر طلباً مبني على بيانات الحجوزات</p>
+            </div>
+
+            {mostRequestedSuitsLoading ? (
+              <div className="flex justify-center py-6"><Activity className="w-6 h-6 text-primary animate-spin" /></div>
+            ) : mostRequestedSuits && mostRequestedSuits.items.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full text-right text-xs font-semibold">
+                  <thead>
+                    <tr className="border-b border-border/60 text-muted-foreground">
+                      <th className="py-2.5 px-3">الترتيب</th>
+                      <th className="py-2.5 px-3">القسم</th>
+                      <th className="py-2.5 px-3">رقم الشماعة</th>
+                      <th className="py-2.5 px-3">المقاس</th>
+                      <th className="py-2.5 px-3">إجمالي الحجوزات</th>
+                      <th className="py-2.5 px-3">الحجوزات المكتملة</th>
+                      <th className="py-2.5 px-3">الحجوزات الملغاة</th>
+                      <th className="py-2.5 px-3">آخر حجز</th>
+                      <th className="py-2.5 px-3 text-left">الإيرادات</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/30">
+                    {mostRequestedSuits.items.map((stat, idx) => (
+                      <tr key={idx} className="hover:bg-accent/25 transition-colors">
+                        <td className="py-3 px-3">
+                          <span className={cn(
+                            "w-5 h-5 rounded-full flex items-center justify-center font-bold text-[10px] text-background",
+                            stat.rank === 1 ? "bg-amber-400" : stat.rank === 2 ? "bg-slate-400" : stat.rank === 3 ? "bg-amber-700" : "bg-muted text-muted-foreground"
+                          )}>
+                            {stat.rank}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3 font-extrabold text-foreground">{stat.partitionName}</td>
+                        <td className="py-3 px-3">
+                          <span className="font-mono text-muted-foreground bg-accent/60 px-2 py-0.5 rounded">
+                            شماعة #{stat.hangerNumber}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3 font-bold text-foreground">مقاس {stat.suitSize}</td>
+                        <td className="py-3 px-3 font-mono text-foreground">{stat.totalBookings} حجز</td>
+                        <td className="py-3 px-3 font-mono text-emerald-500">{stat.completedBookings} مكتمل</td>
+                        <td className="py-3 px-3 font-mono text-red-400">{stat.cancelledBookings} ملغي</td>
+                        <td className="py-3 px-3 text-muted-foreground font-mono">
+                          {stat.lastBookedAt ? new Date(stat.lastBookedAt).toLocaleDateString("ar-EG-u-nu-latn") : "-"}
+                        </td>
+                        <td className="py-3 px-3 text-left font-black text-emerald-400 font-mono">
+                          {stat.revenueGenerated} ج.م
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="text-center py-12 text-muted-foreground">لا توجد بيانات متاحة لفترة التصفية المحددة</div>
+            )}
           </div>
         </div>
       )}

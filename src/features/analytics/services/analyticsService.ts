@@ -14,6 +14,7 @@ import type {
   PeakTimesResponse,
   CustomerRetentionResponse,
   RiskReportResponse,
+  MostRequestedSuitsResponse,
 } from "../types/analytics";
 
 class AnalyticsService {
@@ -133,6 +134,16 @@ class AnalyticsService {
     if (from) params.from = from;
     if (to) params.to = to;
     const res = await apiClient.get<RiskReportResponse>("/analytics/risks", { params });
+    return res.data;
+  }
+
+  /** GET /analytics/suit-sizes/most-requested */
+  async getMostRequestedSuits(from?: string, to?: string, top?: number): Promise<MostRequestedSuitsResponse> {
+    const params: Record<string, any> = {};
+    if (from) params.from = from;
+    if (to) params.to = to;
+    if (top !== undefined) params.top = top;
+    const res = await apiClient.get<MostRequestedSuitsResponse>("/analytics/suit-sizes/most-requested", { params });
     return res.data;
   }
 

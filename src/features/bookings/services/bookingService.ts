@@ -29,6 +29,7 @@ class BookingService {
     if (params?.hasDiscount !== undefined) q.append("HasDiscount", String(params.hasDiscount));
     if (params?.depositPaid !== undefined) q.append("DepositPaid", String(params.depositPaid));
     if (params?.idTaken !== undefined) q.append("IdTaken", String(params.idTaken));
+    if (params?.isDamaged !== undefined) q.append("IsDamaged", String(params.isDamaged));
 
     const res = await apiClient.get<BookingsListResponse>(`/bookings?${q.toString()}`, { signal });
     return res.data;

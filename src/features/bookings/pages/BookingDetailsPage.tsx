@@ -10,18 +10,15 @@ import {
 } from "../hooks/useBookings";
 import { toast } from "sonner";
 import {
-  ArrowRight, Calendar, User, CreditCard,
+  ArrowRight, Calendar, User, CreditCard, Printer,
   Layers, Notebook, Clock, Trash2, Check, Loader2, ShieldAlert,
   AlertTriangle, CheckCircle2, Pencil, Phone, ArrowDown, ArrowUp,
   Shirt, SlidersHorizontal, UserCheck, XCircle, Wind
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
-  GRAVATA_COLORS,
-  SHIRT_COLORS,
+  ACCESSORY_COLORS,
   SHIRT_SIZES,
-  TROUSER_COLORS,
-  VEST_COLORS
 } from "../components/BookingForm";
 import { BookingCancelModal } from "../components/BookingCancelModal";
 import { BookingEditModal } from "../components/BookingEditModal";
@@ -60,6 +57,7 @@ export default function BookingDetailsPage() {
 
   const [showEditModal, setShowEditModal] = useState(false);
   const [editFromDate, setEditFromDate] = useState("");
+  const [editEventDate, setEditEventDate] = useState("");
   const [editToDate, setEditToDate] = useState("");
   const [editTotalAmount, setEditTotalAmount] = useState(0);
   const [editHasDiscount, setEditHasDiscount] = useState(false);
@@ -77,6 +75,8 @@ export default function BookingDetailsPage() {
   const [returnIsDamaged, setReturnIsDamaged] = useState(false);
   const [returnDamageAmount, setReturnDamageAmount] = useState(0);
   const [returnDamageNotes, setReturnDamageNotes] = useState("");
+  const [returnExtraDamagePaid, setReturnExtraDamagePaid] = useState(false);
+  const [returnExtraDamagePaidAmount, setReturnExtraDamagePaidAmount] = useState(0);
 
   if (isLoading) {
     return (
@@ -122,12 +122,19 @@ export default function BookingDetailsPage() {
 
   const handleConfirmReturn = async () => {
     try {
+      const extraOwed = returnIsDamaged && returnDamageAmount > (booking.depositAmount ?? 0)
+        ? returnDamageAmount - (booking.depositAmount ?? 0)
+        : 0;
       await returnBookingM.mutateAsync({
         id: booking.id,
         body: {
           isDamaged: returnIsDamaged,
           damageAmount: returnIsDamaged ? returnDamageAmount : null,
           damageNotes: returnIsDamaged ? returnDamageNotes : null,
+          extraDamagePaidAmount:
+            returnIsDamaged && returnExtraDamagePaid && extraOwed > 0
+              ? returnExtraDamagePaidAmount
+              : null,
         }
       });
       setShowReturnModal(false);
@@ -141,6 +148,7 @@ export default function BookingDetailsPage() {
       await updateM.mutateAsync({
         id: booking!.id,
         body: {
+          eventDate: editEventDate ? new Date(editEventDate).toISOString() : new Date().toISOString(),
           fromDate: new Date(editFromDate).toISOString(),
           toDate: new Date(editToDate).toISOString(),
           totalAmount: editTotalAmount,
@@ -149,6 +157,20 @@ export default function BookingDetailsPage() {
           depositAmount: editDepositAmount,
           idTaken: editIdTaken,
           notes: editNotes || undefined,
+          gravataColor: booking!.gravataColor,
+          shirtColor: booking!.shirtColor,
+          shirtSize: booking!.shirtSize,
+          trouserColor: booking!.trouserColor,
+          trouserSize: booking!.trouserSize,
+          trouserWaistSize: booking!.trouserWaistSize,
+          trouserLength: booking!.trouserLength,
+          vestColor: booking!.vestColor,
+          vestSize: booking!.vestSize,
+          hasChain: booking!.hasChain,
+          hasBabyFleur: booking!.hasBabyFleur,
+          hasCufflinks: booking!.hasCufflinks,
+          bowTieType: booking!.bowTieType,
+          bowTieColor: booking!.bowTieColor,
         }
       });
       setShowEditModal(false);
@@ -259,6 +281,7 @@ export default function BookingDetailsPage() {
             onClick={() => {
               if (booking) {
                 setEditFromDate(booking.fromDate.split("T")[0]);
+                setEditEventDate(booking.eventDate ? booking.eventDate.split("T")[0] : "");
                 setEditToDate(booking.toDate.split("T")[0]);
                 setEditTotalAmount(booking.totalAmount);
                 setEditHasDiscount(booking.discountPercentage != null);
@@ -276,6 +299,15 @@ export default function BookingDetailsPage() {
           >
             <Pencil className="w-4.5 h-4.5" />
             <span>تعديل</span>
+          </button>
+
+          <button
+            onClick={() => window.print()}
+            className="flex items-center justify-center gap-2 px-5 h-11 rounded-xl bg-slate-700 hover:bg-slate-800 text-white font-bold text-sm transition-all cursor-pointer shadow-md"
+            title="طباعة إيصال دفع حراري"
+          >
+            <Printer className="w-4.5 h-4.5" />
+            <span>طباعة الإيصال (POS)</span>
           </button>
 
           <button
@@ -531,7 +563,7 @@ export default function BookingDetailsPage() {
               
               <div className="flex items-center gap-2 bg-muted/40 border border-border/40 px-3 py-2 rounded-xl text-xs font-bold text-foreground">
                 <User className="w-4 h-4 text-primary shrink-0" />
-                <span>الشماعة: A-{booking.hangerNumber}</span>
+                <span>الشماعة: {booking.partitionName}-{booking.hangerNumber}</span>
               </div>
               
               <div className="flex items-center gap-2 bg-muted/40 border border-border/40 px-3 py-2 rounded-xl text-xs font-bold text-foreground font-mono">
@@ -542,28 +574,59 @@ export default function BookingDetailsPage() {
               {booking.gravataColor && (
                 <div className="flex items-center gap-2 bg-muted/40 border border-border/40 px-3 py-2 rounded-xl text-xs font-bold text-foreground">
                   <Wind className="w-4 h-4 text-primary shrink-0" />
-                  <span>الجرافة: {GRAVATA_COLORS[booking.gravataColor as keyof typeof GRAVATA_COLORS]}</span>
+                  <span>الجرافة: {ACCESSORY_COLORS[booking.gravataColor as keyof typeof ACCESSORY_COLORS]}</span>
                 </div>
               )}
 
               {booking.shirtColor && (
                 <div className="flex items-center gap-2 bg-muted/40 border border-border/40 px-3 py-2 rounded-xl text-xs font-bold text-foreground">
                   <Shirt className="w-4 h-4 text-primary shrink-0" />
-                  <span>القميص: {SHIRT_COLORS[booking.shirtColor as keyof typeof SHIRT_COLORS]} {booking.shirtSize ? `(مقاس ${SHIRT_SIZES[booking.shirtSize as keyof typeof SHIRT_SIZES]})` : ""}</span>
+                  <span>القميص: {ACCESSORY_COLORS[booking.shirtColor as keyof typeof ACCESSORY_COLORS]} {booking.shirtSize ? `(مقاس ${SHIRT_SIZES[booking.shirtSize as keyof typeof SHIRT_SIZES]})` : ""}</span>
                 </div>
               )}
 
               {booking.trouserColor && (
                 <div className="flex items-center gap-2 bg-muted/40 border border-border/40 px-3 py-2 rounded-xl text-xs font-bold text-foreground">
                   <Shirt className="w-4 h-4 rotate-90 text-primary shrink-0" />
-                  <span>البنطلون: {TROUSER_COLORS[booking.trouserColor as keyof typeof TROUSER_COLORS]} {` (خصر: ${booking.trouserWaistSize || "-"}، طول: ${booking.trouserLength || "-"})`}</span>
+                  <span>البنطلون: {ACCESSORY_COLORS[booking.trouserColor as keyof typeof ACCESSORY_COLORS]} {booking.trouserSize ? `(مقاس ${booking.trouserSize})` : ""} {` (خصر: ${booking.trouserWaistSize || "-"}، طول: ${booking.trouserLength || "-"})`}</span>
                 </div>
               )}
 
               {booking.vestColor && (
                 <div className="flex items-center gap-2 bg-muted/40 border border-border/40 px-3 py-2 rounded-xl text-xs font-bold text-foreground">
                   <Shirt className="w-4 h-4 text-primary shrink-0" style={{ clipPath: "polygon(10% 0%, 90% 0%, 90% 100%, 10% 100%)" }} />
-                  <span>السديري: {VEST_COLORS[booking.vestColor as keyof typeof VEST_COLORS]}</span>
+                  <span>السديري: {ACCESSORY_COLORS[booking.vestColor as keyof typeof ACCESSORY_COLORS]} {booking.vestSize ? `(مقاس ${booking.vestSize})` : ""}</span>
+                </div>
+              )}
+
+              {booking.hasChain && (
+                <div className="flex items-center gap-2 bg-muted/40 border border-border/40 px-3 py-2 rounded-xl text-xs font-bold text-foreground">
+                  <Layers className="w-4 h-4 text-primary shrink-0" />
+                  <span>سلسلة</span>
+                </div>
+              )}
+
+              {booking.hasBabyFleur && (
+                <div className="flex items-center gap-2 bg-muted/40 border border-border/40 px-3 py-2 rounded-xl text-xs font-bold text-foreground">
+                  <Wind className="w-4 h-4 text-primary shrink-0" />
+                  <span>بابي فلور</span>
+                </div>
+              )}
+
+              {booking.hasCufflinks && (
+                <div className="flex items-center gap-2 bg-muted/40 border border-border/40 px-3 py-2 rounded-xl text-xs font-bold text-foreground">
+                  <UserCheck className="w-4 h-4 text-primary shrink-0" />
+                  <span>كافلين</span>
+                </div>
+              )}
+
+              {(booking.bowTieType || booking.bowTieColor) && (
+                <div className="flex items-center gap-2 bg-muted/40 border border-border/40 px-3 py-2 rounded-xl text-xs font-bold text-foreground">
+                  <Wind className="w-4 h-4 text-primary shrink-0" />
+                  <span>
+                    الببيون: {booking.bowTieType === "Classic" ? "عادي (ربط)" : "جاهز"} 
+                    {booking.bowTieColor ? ` (${ACCESSORY_COLORS[booking.bowTieColor as keyof typeof ACCESSORY_COLORS]})` : ""}
+                  </span>
                 </div>
               )}
             </div>
@@ -599,6 +662,24 @@ export default function BookingDetailsPage() {
                   </span>
                 </div>
               </div>
+
+              {/* Event Date node */}
+              {booking.eventDate && (
+                <div className="relative pt-2">
+                  <div className="absolute -right-9 top-2.5 w-6 h-6 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-primary shadow-sm">
+                    <Calendar className="w-3.5 h-3.5" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[10px] text-primary font-extrabold mb-1">تاريخ المناسبة / الحفل</span>
+                    <span className="text-sm font-bold text-foreground">
+                      {new Date(booking.eventDate).toLocaleDateString("ar-EG-u-nu-latn", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+                    </span>
+                    <span className="text-xs text-muted-foreground font-mono mt-0.5">
+                      {new Date(booking.eventDate).toLocaleTimeString("ar-EG-u-nu-latn", { hour: "2-digit", minute: "2-digit" })}
+                    </span>
+                  </div>
+                </div>
+              )}
 
               {/* Return node */}
               <div className="relative pt-2">
@@ -760,9 +841,23 @@ export default function BookingDetailsPage() {
             )}
           </div>
           {booking.isDamaged && booking.extraDamageOwed && booking.extraDamageOwed > 0 && (
-            <div className="bg-red-500/20 border border-red-500/30 rounded-xl p-4 text-xs font-bold text-red-400 mt-2 flex items-center justify-between font-mono">
-              <span>المبلغ الإضافي المستحق للدفع من العميل (الفرق):</span>
-              <span className="text-sm font-black">{booking.extraDamageOwed.toLocaleString("ar-EG-u-nu-latn", { minimumFractionDigits: 3 })} د.ك</span>
+            <div className="bg-red-500/20 border border-red-500/30 rounded-xl p-4 text-xs font-bold text-red-400 mt-2 flex flex-col gap-2 font-mono">
+              <div className="flex items-center justify-between">
+                <span>المبلغ الإضافي المستحق على العميل (الفرق):</span>
+                <span className="text-sm font-black">{booking.extraDamageOwed.toLocaleString("ar-EG-u-nu-latn", { minimumFractionDigits: 3 })} د.ك</span>
+              </div>
+              {booking.extraDamagePaidAmount != null && booking.extraDamagePaidAmount > 0 && (
+                <div className="flex items-center justify-between border-t border-red-500/20 pt-2 text-emerald-400">
+                  <span>المدفوع منه فعلياً:</span>
+                  <span className="text-sm font-black">{booking.extraDamagePaidAmount.toLocaleString("ar-EG-u-nu-latn", { minimumFractionDigits: 3 })} د.ك</span>
+                </div>
+              )}
+              {booking.extraDamagePaidAmount == null || booking.extraDamagePaidAmount === 0 ? (
+                <div className="flex items-center justify-between border-t border-red-500/20 pt-2 text-amber-400">
+                  <span>الحالة:</span>
+                  <span className="text-xs font-black">⚠ لم يُسدَّد الفرق بعد</span>
+                </div>
+              ) : null}
             </div>
           )}
           {booking.isDamaged && booking.damageNotes && (
@@ -791,6 +886,8 @@ export default function BookingDetailsPage() {
       {/* Edit Modal */}
       {showEditModal && (
         <BookingEditModal
+          editEventDate={editEventDate}
+          setEditEventDate={setEditEventDate}
           editFromDate={editFromDate}
           setEditFromDate={setEditFromDate}
           editToDate={editToDate}
@@ -839,11 +936,125 @@ export default function BookingDetailsPage() {
           setReturnDamageAmount={setReturnDamageAmount}
           returnDamageNotes={returnDamageNotes}
           setReturnDamageNotes={setReturnDamageNotes}
+          returnExtraDamagePaid={returnExtraDamagePaid}
+          setReturnExtraDamagePaid={setReturnExtraDamagePaid}
+          returnExtraDamagePaidAmount={returnExtraDamagePaidAmount}
+          setReturnExtraDamagePaidAmount={setReturnExtraDamagePaidAmount}
           onConfirm={handleConfirmReturn}
           onClose={() => setShowReturnModal(false)}
           isPending={returnBookingM.isPending}
         />
       )}
+
+      {/* ══ POS Receipt Section for Printing (Hidden on screen, visible only on print) ══ */}
+      <div id="pos-receipt-print-area" className="hidden print:block text-black bg-white" dir="rtl">
+        <div className="text-center font-bold text-sm mb-0.5">دار كرافت لتأجير البدل</div>
+        <div className="text-center text-[10px] mb-2">العنوان: الفرع الرئيسي | تليفون: 01000000000</div>
+        
+        <div className="border-t border-dashed border-black my-1"></div>
+        
+        <div className="text-[11px] space-y-0.5">
+          <div><strong>رقم الفاتورة:</strong> #{booking.code}</div>
+          <div><strong>التاريخ:</strong> {new Date().toLocaleString("ar-EG")}</div>
+          <div><strong>العميل:</strong> {booking.customer.customerName ?? "-"}</div>
+          <div><strong>الموبايل:</strong> {booking.customer.phone ?? "-"}</div>
+        </div>
+        
+        <div className="border-t border-dashed border-black my-1"></div>
+        
+        <div className="text-[11px] font-bold mb-0.5">تفاصيل الطلب:</div>
+        <div className="text-[11px] space-y-0.5">
+          <div className="flex justify-between">
+            <span>البدلة (المقاس):</span>
+            <span>{booking.suitSize}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>القسم (البارتشن):</span>
+            <span>{booking.partition?.name ?? "-"}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>الشماعة:</span>
+            <span>{booking.hanger?.code ?? "-"}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>تاريخ الاستلام:</span>
+            <span>{new Date(booking.fromDate).toLocaleDateString("ar-EG")}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>تاريخ الإرجاع:</span>
+            <span>{new Date(booking.toDate).toLocaleDateString("ar-EG")}</span>
+          </div>
+        </div>
+        
+        <div className="border-t border-dashed border-black my-1"></div>
+        
+        <div className="text-[11px] font-bold mb-0.5">الحساب المالي:</div>
+        <div className="text-[11px] space-y-0.5">
+          <div className="flex justify-between">
+            <span>الإجمالي:</span>
+            <span>{booking.totalAmount.toFixed(2)} ج.م</span>
+          </div>
+          {booking.discountPercentage !== null && booking.discountPercentage > 0 && (
+            <div className="flex justify-between">
+              <span>خصم ({booking.discountPercentage}%):</span>
+              <span>-{(booking.totalAmount - booking.finalAmount).toFixed(2)} ج.م</span>
+            </div>
+          )}
+          <div className="flex justify-between font-bold border-t border-dotted border-black pt-0.5">
+            <span>الصافي المطلوب:</span>
+            <span>{booking.finalAmount.toFixed(2)} ج.م</span>
+          </div>
+          <div className="flex justify-between">
+            <span>المبلغ المدفوع:</span>
+            <span>{booking.paidAmount.toFixed(2)} ج.م</span>
+          </div>
+          <div className="flex justify-between">
+            <span>مبلغ التأمين (الضمان):</span>
+            <span>{(booking.depositAmount ?? 0).toFixed(2)} ج.م ({booking.depositPaid ? "تم الدفع" : "معلق"})</span>
+          </div>
+          <div className="flex justify-between font-bold border-t border-black pt-0.5">
+            <span>المتبقي المستحق:</span>
+            <span>{booking.remainingAmount.toFixed(2)} ج.م</span>
+          </div>
+        </div>
+        
+        <div className="border-t border-dashed border-black my-2"></div>
+        
+        <div className="text-[9px] text-center space-y-0.5">
+          <div className="font-bold">سياسة الاستلام والإرجاع:</div>
+          <div>1. يرجى إرجاع البدلة في الموعد المحدد تجنباً للغرامات اليومية.</div>
+          <div>2. التأمين مسترد بالكامل في حال سلامة البدلة وملحقاتها.</div>
+          <div className="font-bold pt-1 text-[10px]">شكراً لتعاملكم معنا!</div>
+        </div>
+      </div>
+
+      <style>{`
+        @media print {
+          /* Hide all screen elements */
+          body * {
+            visibility: hidden !important;
+          }
+          #pos-receipt-print-area, #pos-receipt-print-area * {
+            visibility: visible !important;
+          }
+          #pos-receipt-print-area {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 80mm;
+            padding: 4mm;
+            background: white !important;
+            color: black !important;
+            font-family: 'Courier New', Courier, monospace;
+            direction: rtl;
+            text-align: right;
+          }
+          @page {
+            size: 80mm auto;
+            margin: 0;
+          }
+        }
+      `}</style>
     </div>
   );
 }

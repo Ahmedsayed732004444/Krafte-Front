@@ -3,6 +3,8 @@ import { Modal } from "./Modal";
 import { Loader2, Check } from "lucide-react";
 
 interface BookingEditModalProps {
+  editEventDate: string;
+  setEditEventDate: (val: string) => void;
   editFromDate: string;
   setEditFromDate: (val: string) => void;
   editToDate: string;
@@ -27,6 +29,8 @@ interface BookingEditModalProps {
 }
 
 export const BookingEditModal: React.FC<BookingEditModalProps> = ({
+  editEventDate,
+  setEditEventDate,
   editFromDate,
   setEditFromDate,
   editToDate,
@@ -52,6 +56,16 @@ export const BookingEditModal: React.FC<BookingEditModalProps> = ({
   return (
     <Modal title="تعديل بيانات الحجز" onClose={onClose}>
       <div className="space-y-4 pt-2 text-right" dir="rtl">
+        <div>
+          <label className="block text-xs font-semibold text-muted-foreground mb-1.5">تاريخ المناسبة / الحفل *</label>
+          <input
+            type="date"
+            value={editEventDate}
+            onChange={e => setEditEventDate(e.target.value)}
+            className="w-full h-11 px-4 rounded-xl bg-background border border-border text-foreground outline-none focus:ring-2 focus:ring-primary text-xs font-semibold transition-all text-right cursor-pointer"
+          />
+        </div>
+
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-semibold text-muted-foreground mb-1.5">تاريخ الاستلام *</label>

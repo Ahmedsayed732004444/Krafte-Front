@@ -256,3 +256,25 @@ export interface RiskReportResponse {
   damageByMonth: RiskMonthStat[];
   cancellationByMonth: RiskMonthStat[];
 }
+
+export interface MostRequestedSuitItem {
+  rank: number;
+  partitionId: string;
+  partitionName: string;
+  hangerId: string;
+  hangerNumber: number;
+  suitSize: number;
+  totalBookings: number;
+  completedBookings: number;
+  cancelledBookings: number;
+  revenueGenerated: number;
+  lastBookedAt: string | null;
+}
+
+export interface MostRequestedSuitsResponse {
+  items: MostRequestedSuitItem[];
+  topHangerNumber: number | null;
+  topPartitionName: string | null;
+  from: string | null;
+  to: string | null;
+}

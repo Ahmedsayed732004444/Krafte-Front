@@ -98,3 +98,10 @@ export const useGetRiskReport = (from?: string, to?: string) => {
     queryFn: () => analyticsService.getRiskReport(from, to),
   });
 };
+
+export const useGetMostRequestedSuits = (from?: string, to?: string, top?: number) => {
+  return useQuery({
+    queryKey: ["analytics", "most-requested-suits", from, to, top],
+    queryFn: () => analyticsService.getMostRequestedSuits(from, to, top),
+  });
+};

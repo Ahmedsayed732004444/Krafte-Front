@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Outlet, NavLink } from "react-router-dom";
-import { Home, Settings, Sun, Moon, Menu, X, Calendar, Shirt, LogOut, Bell, Users, BarChart3, Plus } from "lucide-react";
+import { Home, Settings, Sun, Moon, Menu, X, Calendar, Shirt, LogOut, Bell, Users, BarChart3, Plus, Wallet } from "lucide-react";
 import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
 import { useNotifications } from "@/features/notifications/context/NotificationContext";
@@ -11,6 +11,7 @@ const navItems = [
   { to: "/customers", label: "العملاء", icon: Users, end: false },
   { to: "/notifications", label: "الإشعارات", icon: Bell, end: false },
   { to: "/analytics", label: "التحليلات", icon: BarChart3, end: false },
+  { to: "/expenses", label: "المصروفات", icon: Wallet, end: false },
   { to: "/settings", label: "الإعدادات", icon: Settings, end: false },
 ];
 

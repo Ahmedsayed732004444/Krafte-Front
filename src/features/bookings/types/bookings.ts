@@ -3,13 +3,52 @@ import type { PaginatedResponse } from "@/shared/types/pagination";
 // ─── Enums matching Backend ────────────────────────────────────────
 export type BookingStatus = "Active" | "PickedUp" | "Returned" | "Cancelled";
 
-export type SuitSize = 42 | 44 | 46 | 48 | 50 | 52 | 54 | 56;
+export type AccessoryColor =
+  | "Black"
+  | "White"
+  | "Gray"
+  | "LightGray"
+  | "Navy"
+  | "RoyalBlue"
+  | "SkyBlue"
+  | "Blue"
+  | "Red"
+  | "Burgundy"
+  | "Wine"
+  | "Rose"
+  | "Pink"
+  | "Green"
+  | "DarkGreen"
+  | "Olive"
+  | "Mint"
+  | "Brown"
+  | "Beige"
+  | "Camel"
+  | "Champagne"
+  | "Ivory"
+  | "Gold"
+  | "Silver"
+  | "Purple"
+  | "Lavender"
+  | "Orange"
+  | "Yellow"
+  | "Turquoise";
 
-export type GravataColor = "Red" | "Blue" | "Green" | "Black" | "White" | "Yellow" | "Purple" | "Orange";
-export type ShirtColor = "White" | "Black";
-export type ShirtSize = "Size55" | "Size56" | "Size57" | "Size58" | "Size59" | "Size60";
-export type TrouserColor = "Black" | "White" | "Gray" | "Navy" | "Brown" | "Beige" | "Burgundy";
-export type VestColor = "Black" | "White" | "Gray" | "Navy" | "Brown" | "Beige" | "Burgundy" | "Green" | "Blue";
+export type ShirtSize =
+  | "Size38"
+  | "Size40"
+  | "Size42"
+  | "Size44"
+  | "Size46"
+  | "Size48"
+  | "Size50"
+  | "Size52"
+  | "Size54"
+  | "Size56";
+
+export type AccessorySize = 42 | 44 | 46 | 48 | 50 | 52 | 54 | 56 | 58 | 60 | 62 | 64;
+
+export type BowTieType = "Classic" | "PreTied";
 
 // ─── DTOs & Interfaces ─────────────────────────────────────────────
 export interface CustomerSummary {
@@ -25,7 +64,8 @@ export interface BookingResponse {
   customer: CustomerSummary;
   partitionName: string;
   hangerNumber: number;
-  suitSize: number; // Represents the numeric size, e.g. 42
+  suitSize: AccessorySize;
+  eventDate: string;
   fromDate: string;
   toDate: string;
   rentalDays: number;
@@ -36,15 +76,22 @@ export interface BookingResponse {
   paidAmount: number;
   remainingAmount: number;
   depositPaid: boolean;
-  depositAmount?: number;
+  depositAmount?: number | null;
   idTaken: boolean;
-  gravataColor?: GravataColor | null;
-  shirtColor?: ShirtColor | null;
+  gravataColor?: AccessoryColor | null;
+  shirtColor?: AccessoryColor | null;
   shirtSize?: ShirtSize | null;
-  trouserColor?: TrouserColor | null;
+  trouserColor?: AccessoryColor | null;
+  trouserSize?: AccessorySize | null;
   trouserWaistSize?: number | null;
   trouserLength?: number | null;
-  vestColor?: VestColor | null;
+  vestColor?: AccessoryColor | null;
+  vestSize?: AccessorySize | null;
+  hasChain: boolean;
+  hasBabyFleur: boolean;
+  hasCufflinks: boolean;
+  bowTieType?: BowTieType | null;
+  bowTieColor?: AccessoryColor | null;
   notes?: string | null;
   createdAt: string;
   updatedAt?: string | null;
@@ -60,6 +107,8 @@ export interface BookingResponse {
   damageAmount?: number | null;
   damageDepositRefund?: number | null;
   extraDamageOwed?: number | null;
+  extraDamagePaidAmount?: number;
+  extraDamagePaidAt?: string | null;
   damageNotes?: string | null;
 }
 
@@ -70,7 +119,8 @@ export interface BookingSummary {
   customer: CustomerSummary;
   partitionName: string;
   hangerNumber: number;
-  suitSize: number;
+  suitSize: AccessorySize;
+  eventDate: string;
   fromDate: string;
   toDate: string;
   totalAmount: number;
@@ -86,32 +136,55 @@ export interface CreateBookingRequest {
   customerName?: string;
   partitionId: string;
   hangerId: string;
-  suitSize: number;
+  suitSize: AccessorySize;
+  eventDate: string;
   fromDate: string;
   toDate: string;
   totalAmount: number;
   discountPercentage?: number | null;
   depositPaid: boolean;
-  depositAmount?: number;
+  depositAmount?: number | null;
   idTaken: boolean;
-  gravataColor?: GravataColor | null;
-  shirtColor?: ShirtColor | null;
+  gravataColor?: AccessoryColor | null;
+  shirtColor?: AccessoryColor | null;
   shirtSize?: ShirtSize | null;
-  trouserColor?: TrouserColor | null;
+  trouserColor?: AccessoryColor | null;
+  trouserSize?: AccessorySize | null;
   trouserWaistSize?: number | null;
   trouserLength?: number | null;
-  vestColor?: VestColor | null;
+  vestColor?: AccessoryColor | null;
+  vestSize?: AccessorySize | null;
+  hasChain: boolean;
+  hasBabyFleur: boolean;
+  hasCufflinks: boolean;
+  bowTieType?: BowTieType | null;
+  bowTieColor?: AccessoryColor | null;
   notes?: string;
 }
 
 export interface UpdateBookingRequest {
+  eventDate: string;
   fromDate: string;
   toDate: string;
   totalAmount: number;
   discountPercentage?: number | null;
   depositPaid: boolean;
-  depositAmount?: number;
+  depositAmount?: number | null;
   idTaken: boolean;
+  gravataColor?: AccessoryColor | null;
+  shirtColor?: AccessoryColor | null;
+  shirtSize?: ShirtSize | null;
+  trouserColor?: AccessoryColor | null;
+  trouserSize?: AccessorySize | null;
+  trouserWaistSize?: number | null;
+  trouserLength?: number | null;
+  vestColor?: AccessoryColor | null;
+  vestSize?: AccessorySize | null;
+  hasChain: boolean;
+  hasBabyFleur: boolean;
+  hasCufflinks: boolean;
+  bowTieType?: BowTieType | null;
+  bowTieColor?: AccessoryColor | null;
   notes?: string;
 }
 
@@ -119,6 +192,7 @@ export interface ReturnBookingRequest {
   isDamaged: boolean;
   damageAmount?: number | null;
   damageNotes?: string | null;
+  extraDamagePaidAmount?: number | null;
 }
 
 export interface CancelBookingRequest {
