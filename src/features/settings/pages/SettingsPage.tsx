@@ -161,9 +161,12 @@ function PartitionsTab() {
 // ═══════════════════════════════════════════════════════════════
 // HANGERS TAB
 // ═══════════════════════════════════════════════════════════════
+const SIZES = [42, 44, 46, 48, 50, 52, 54, 56, 58, 60, 62, 64];
+
 const hangerSchema = z.object({
   number: z.number({ message: "الرقم مطلوب" }).int().min(1, "يجب أن يكون أكبر من 0"),
   partitionId: z.string().min(1, "اختر القسم"),
+  suitSize: z.number({ message: "المقاس مطلوب" }).int().min(42).max(64),
 });
 type HangerFormData = z.infer<typeof hangerSchema>;
 
@@ -172,7 +175,7 @@ const HangerForm = ({ defaults, onSubmit, loading, submitLabel }: { defaults?: P
   const partitions = partitionsData?.items ?? [];
   const { register, handleSubmit, formState: { errors } } = useForm<HangerFormData>({
     resolver: zodResolver(hangerSchema),
-    defaultValues: { number: defaults?.number, partitionId: defaults?.partitionId ?? "" },
+    defaultValues: { number: defaults?.number, partitionId: defaults?.partitionId ?? "", suitSize: defaults?.suitSize ?? 42 },
   });
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -188,6 +191,13 @@ const HangerForm = ({ defaults, onSubmit, loading, submitLabel }: { defaults?: P
           {partitions.map(p => <option key={p.id} value={p.id}>قسم {p.name}</option>)}
         </select>
         {errors.partitionId && <p className="text-destructive text-xs mt-1">{errors.partitionId.message}</p>}
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-muted-foreground mb-2">المقاس الافتراضي للبدلة</label>
+        <select {...register("suitSize", { valueAsNumber: true })} className={cn("w-full h-11 px-4 rounded-xl bg-background border text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all", errors.suitSize ? "border-destructive" : "border-border")}>
+          {SIZES.map(sz => <option key={sz} value={sz}>مقاس {sz}</option>)}
+        </select>
+        {errors.suitSize && <p className="text-destructive text-xs mt-1">{errors.suitSize.message}</p>}
       </div>
       <button type="submit" disabled={loading} className="w-full h-11 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-60">
         {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}{submitLabel}
@@ -279,8 +289,8 @@ function HangersTab() {
       )}
 
       {/* Modals */}
-      {showCreate && <Modal title="إضافة شماعة جديدة" onClose={() => setShowCreate(false)}><HangerForm submitLabel="إنشاء الشماعة" loading={createM.isPending} onSubmit={async d => { await createM.mutateAsync(d); setShowCreate(false); }} /></Modal>}
-      {editTarget && <Modal title="تعديل الشماعة" onClose={() => setEditTarget(null)}><HangerForm defaults={{ number: editTarget.number, partitionId: editTarget.partition.id }} submitLabel="حفظ التعديلات" loading={updateM.isPending} onSubmit={async d => { await updateM.mutateAsync({ id: editTarget.id, body: d }); setEditTarget(null); }} /></Modal>}
+      {showCreate && <Modal title="إضافة شماعة جديدة" onClose={() => setShowCreate(false)}><HangerForm submitLabel="إنشاء الشماعة" loading={createM.isPending} onSubmit={async d => { await createM.mutateAsync(d as any); setShowCreate(false); }} /></Modal>}
+      {editTarget && <Modal title="تعديل الشماعة" onClose={() => setEditTarget(null)}><HangerForm defaults={{ number: editTarget.number, partitionId: editTarget.partition.id, suitSize: editTarget.suitSize }} submitLabel="حفظ التعديلات" loading={updateM.isPending} onSubmit={async d => { await updateM.mutateAsync({ id: editTarget.id, body: d as any }); setEditTarget(null); }} /></Modal>}
       {deleteTarget && <ConfirmDeleteModal label={`شماعة #${deleteTarget.number} - قسم ${deleteTarget.partition.name}`} loading={deleteM.isPending} onConfirm={async () => { await deleteM.mutateAsync(deleteTarget.id); setDeleteTarget(null); }} onCancel={() => setDeleteTarget(null)} />}
     </div>
   );

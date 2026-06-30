@@ -970,11 +970,11 @@ export default function BookingDetailsPage() {
           </div>
           <div className="flex justify-between">
             <span>القسم (البارتشن):</span>
-            <span>{booking.partition?.name ?? "-"}</span>
+            <span>{booking.partitionName ?? "-"}</span>
           </div>
           <div className="flex justify-between">
-            <span>الشماعة:</span>
-            <span>{booking.hanger?.code ?? "-"}</span>
+            <span>رقم الشماعة:</span>
+            <span>{booking.hangerNumber ?? "-"}</span>
           </div>
           <div className="flex justify-between">
             <span>تاريخ الاستلام:</span>
@@ -994,7 +994,7 @@ export default function BookingDetailsPage() {
             <span>الإجمالي:</span>
             <span>{booking.totalAmount.toFixed(2)} ج.م</span>
           </div>
-          {booking.discountPercentage !== null && booking.discountPercentage > 0 && (
+          {booking.discountPercentage !== null && booking.discountPercentage !== undefined && booking.discountPercentage > 0 && (
             <div className="flex justify-between">
               <span>خصم ({booking.discountPercentage}%):</span>
               <span>-{(booking.totalAmount - booking.finalAmount).toFixed(2)} ج.م</span>

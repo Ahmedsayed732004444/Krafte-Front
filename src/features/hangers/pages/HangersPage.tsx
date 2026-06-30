@@ -205,8 +205,8 @@ export default function HangersPage() {
       )}
 
       {/* Modals */}
-      {showCreate && <Modal title="إضافة شماعة جديدة" onClose={() => setShowCreate(false)}><HangerForm submitLabel="إنشاء الشماعة" loading={createMutation.isPending} onSubmit={async d => { await createMutation.mutateAsync(d); setShowCreate(false); }} /></Modal>}
-      {editTarget && <Modal title="تعديل الشماعة" onClose={() => setEditTarget(null)}><HangerForm defaults={{ number: editTarget.number, partitionId: editTarget.partition.id, suitSize: editTarget.suitSize }} submitLabel="حفظ التعديلات" loading={updateMutation.isPending} onSubmit={async d => { await updateMutation.mutateAsync({ id: editTarget.id, body: d }); setEditTarget(null); }} /></Modal>}
+      {showCreate && <Modal title="إضافة شماعة جديدة" onClose={() => setShowCreate(false)}><HangerForm submitLabel="إنشاء الشماعة" loading={createMutation.isPending} onSubmit={async d => { await createMutation.mutateAsync(d as any); setShowCreate(false); }} /></Modal>}
+      {editTarget && <Modal title="تعديل الشماعة" onClose={() => setEditTarget(null)}><HangerForm defaults={{ number: editTarget.number, partitionId: editTarget.partition.id, suitSize: editTarget.suitSize }} submitLabel="حفظ التعديلات" loading={updateMutation.isPending} onSubmit={async d => { await updateMutation.mutateAsync({ id: editTarget.id, body: d as any }); setEditTarget(null); }} /></Modal>}
       {deleteTarget && <ConfirmDelete hanger={deleteTarget} loading={deleteMutation.isPending} onConfirm={async () => { await deleteMutation.mutateAsync(deleteTarget.id); setDeleteTarget(null); }} onCancel={() => setDeleteTarget(null)} />}
     </div>
   );
